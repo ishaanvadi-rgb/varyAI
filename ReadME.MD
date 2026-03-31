@@ -77,19 +77,3 @@ Open `http://localhost:8000`
 
 ---
 
-## Tech
-
-Python · FastAPI · SQLite · ChromaDB · sentence-transformers · Groq · OpenRouter · HTML/CSS/JS
-
----
-
-## What's coming
-
-- Web search
-- File upload
-- Tests
-- Hosted version
-
----
-
-*Built by Ishaan Vadi · Second year student · Learning AI engineering by building things*
