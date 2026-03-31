@@ -14,6 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
 
   <style>
     /* ─────────────────────────────────────────
@@ -262,15 +263,48 @@
       gap: 12px;
     }
 
-    .model-badge {
-      font-size: 10px;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--accent);
+    /* Model selector dropdown */
+    .model-selector select {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.06em;
       background: var(--accent-glow);
+      color: var(--accent);
       border: 1px solid var(--border-accent);
-      padding: 4px 10px;
+      padding: 5px 28px 5px 12px;
       border-radius: 20px;
+      cursor: pointer;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23c8a96e' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-color: var(--accent-glow);
+      transition: all var(--transition);
+      min-width: 180px;
+    }
+
+    .model-selector select:hover {
+      border-color: var(--accent);
+    }
+
+    .model-selector select option {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      font-size: 12px;
+    }
+
+    /* Model switch notification */
+    .model-switch-notice {
+      align-self: center;
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      padding: 4px 12px;
+      border: 1px dashed var(--border);
+      border-radius: 20px;
+      animation: fadeIn 0.3s ease forwards;
     }
 
     .session-info {
@@ -488,6 +522,203 @@
       padding: 0 4px;
     }
 
+    /* Sidebar tabs */
+    .sidebar-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      gap: 4px;
+    }
+
+    .tab-btn {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-muted);
+      padding: 10px 8px;
+      cursor: pointer;
+      transition: all var(--transition);
+      margin-bottom: -1px;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-secondary);
+    }
+
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* Conversation history items */
+    .conversation-item {
+      padding: 10px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all var(--transition);
+      animation: factAppear 0.3s ease forwards;
+    }
+
+    .conversation-item:hover {
+      border-color: var(--accent-dim);
+      background: var(--bg-elevated);
+    }
+
+    .conversation-item.active {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+    }
+
+    .conversation-title {
+      font-size: 11px;
+      color: var(--text-primary);
+      line-height: 1.4;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .conversation-meta {
+      font-size: 9px;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .conversation-delete {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 11px;
+      padding: 0 2px;
+      transition: color var(--transition);
+      line-height: 1;
+    }
+
+    .conversation-delete:hover {
+      color: #e06c6c;
+    }
+
+    .new-chat-btn {
+      width: 100%;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: none;
+      border: 1px dashed var(--border);
+      color: var(--text-muted);
+      padding: 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all var(--transition);
+      margin-bottom: 16px;
+    }
+
+    .new-chat-btn:hover {
+      border-color: var(--accent-dim);
+      color: var(--accent);
+    }
+
+    /* Export/Import bar */
+    .export-import-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .export-btn, .import-btn {
+      flex: 1;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 7px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all var(--transition);
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .export-btn:hover, .import-btn:hover {
+      border-color: var(--accent-dim);
+      color: var(--accent);
+    }
+
+    /* Markdown rendering inside message bubbles */
+    .message-bubble p { margin: 0 0 8px 0; }
+    .message-bubble p:last-child { margin-bottom: 0; }
+    .message-bubble strong { color: var(--text-primary); font-weight: 500; }
+    .message-bubble em { color: var(--text-secondary); }
+    .message-bubble ul, .message-bubble ol { padding-left: 18px; margin: 6px 0; }
+    .message-bubble li { margin-bottom: 4px; }
+    .message-bubble h1, .message-bubble h2, .message-bubble h3 {
+      font-family: var(--font-display);
+      color: var(--text-primary);
+      margin: 12px 0 6px;
+      font-size: 14px;
+    }
+    .message-bubble code {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      background: var(--bg-base);
+      color: var(--accent);
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+    .message-bubble pre {
+      background: var(--bg-base);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      overflow-x: auto;
+      margin: 8px 0;
+    }
+    .message-bubble pre code {
+      background: none;
+      color: var(--text-primary);
+      padding: 0;
+      font-size: 12px;
+    }
+    .message-bubble blockquote {
+      border-left: 2px solid var(--accent-dim);
+      margin: 8px 0;
+      padding-left: 12px;
+      color: var(--text-secondary);
+    }
+    .message-bubble a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .message-bubble a:hover {
+      text-decoration: underline;
+    }
+    .message-bubble hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 12px 0;
+    }
+
     /* ─────────────────────────────────────────
        Animations
     ───────────────────────────────────────── */
@@ -539,10 +770,60 @@
       <div class="logo-sub">Local Memory · Private by Design</div>
     </div>
 
-    <div class="sidebar-section">
+    <!-- Tab switcher -->
+    <div class="sidebar-tabs">
+      <button class="tab-btn active" onclick="switchTab('profile')">Profile</button>
+      <button class="tab-btn" onclick="switchTab('history')">History</button>
+      <button class="tab-btn" onclick="switchTab('editor')">Edit</button>
+    </div>
+
+    <!-- Profile tab -->
+    <div class="sidebar-section" id="tab-profile">
       <div class="section-label">What I know about you</div>
       <div id="profile-content">
         <p class="profile-empty">Your profile is empty.<br/>Start chatting — I'll learn as we talk.</p>
+      </div>
+    </div>
+
+    <!-- History tab -->
+    <div class="sidebar-section hidden" id="tab-history">
+      <div class="section-label">Past conversations</div>
+      <div id="history-content">
+        <p class="profile-empty">No conversations yet.<br/>Start chatting to build history.</p>
+      </div>
+    </div>
+
+    <!-- Editor tab -->
+    <div class="sidebar-section hidden" id="tab-editor">
+      <div class="section-label">Edit your profile</div>
+
+      <!-- Export/Import controls -->
+      <div class="export-import-bar">
+        <button class="export-btn" onclick="exportProfile()">↓ Export JSON</button>
+        <label class="import-btn">
+          ↑ Import JSON
+          <input type="file" id="import-file" accept=".json" onchange="importProfile(event)" style="display:none">
+        </label>
+      </div>
+
+      <!-- Add fact form -->
+      <div class="add-fact-form">
+        <select id="new-fact-category">
+          <option value="preferences">Preferences</option>
+          <option value="projects">Projects</option>
+          <option value="skills">Skills</option>
+          <option value="history">History</option>
+        </select>
+        <textarea
+          id="new-fact-content"
+          placeholder="Add a fact about yourself..."
+          rows="2"
+        ></textarea>
+        <button class="add-fact-btn" onclick="addFact()">Add fact</button>
+      </div>
+
+      <div id="editor-content">
+        <p class="profile-empty">Loading profile...</p>
       </div>
     </div>
 
@@ -556,7 +837,11 @@
   <main class="chat-area">
     <div class="chat-header">
       <div class="chat-header-left">
-        <div class="model-badge">Llama 3.3 · 70B</div>
+        <div class="model-selector">
+          <select id="model-select" onchange="onModelChange()">
+            <option value="">Loading models...</option>
+          </select>
+        </div>
         <div class="session-info" id="session-info">new session</div>
       </div>
       <button class="clear-btn" onclick="clearConversation()">Clear session</button>
@@ -595,16 +880,175 @@
   // ─────────────────────────────────────────
   let isStreaming = false;
   let messageCount = 0;
+  let currentModel = "llama-3.3-70b";
+  let availableModels = [];
+  let activeConversationId = null;
 
   // ─────────────────────────────────────────
   // On load
   // ─────────────────────────────────────────
   window.addEventListener('load', async () => {
-    // Load existing profile on startup
+    await loadModels();
     await refreshProfile();
-    // Focus input
+    await refreshHistory();
     document.getElementById('message-input').focus();
   });
+
+  // ─────────────────────────────────────────
+  // Tab switching
+  // ─────────────────────────────────────────
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.sidebar-section').forEach(sec => sec.classList.add('hidden'));
+
+    document.querySelector(`[onclick="switchTab('${tab}')"]`).classList.add('active');
+    document.getElementById(`tab-${tab}`).classList.remove('hidden');
+
+    if (tab === 'history') refreshHistory();
+    if (tab === 'editor') loadEditor();
+  }
+
+  // ─────────────────────────────────────────
+  // Profile editor
+  // ─────────────────────────────────────────
+  async function loadEditor() {
+    try {
+      const response = await fetch('/profile/full');
+      const data = await response.json();
+      renderEditor(data.profile);
+    } catch (err) {
+      console.error('Could not load profile for editing:', err);
+    }
+  }
+
+  function renderEditor(profile) {
+    const container = document.getElementById('editor-content');
+    let html = '';
+
+    const categoryLabels = {
+      preferences: 'Preferences',
+      projects: 'Projects',
+      skills: 'Skills',
+      history: 'History'
+    };
+
+    let hasAnyFacts = false;
+
+    for (const [category, facts] of Object.entries(profile)) {
+      if (facts.length === 0) continue;
+      hasAnyFacts = true;
+
+      html += `<div class="editable-category">`;
+      html += `<div class="category-title">${categoryLabels[category]}</div>`;
+
+      facts.forEach(fact => {
+        html += `
+          <div class="editable-fact" id="fact-${fact.id}">
+            <span class="editable-fact-text">${fact.content}</span>
+            <button class="delete-fact-btn"
+                    onclick="deleteFact(${fact.id})"
+                    title="Delete this fact">✕</button>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+    }
+
+    if (!hasAnyFacts) {
+      html = '<p class="profile-empty">No facts yet.<br/>Add one above or start chatting.</p>';
+    }
+
+    container.innerHTML = html;
+  }
+
+  async function deleteFact(factId) {
+    try {
+      await fetch(`/profile/fact/${factId}`, { method: 'DELETE' });
+
+      // Remove from UI immediately without full reload
+      const el = document.getElementById(`fact-${factId}`);
+      if (el) el.remove();
+
+      // Also refresh the profile tab
+      await refreshProfile();
+
+    } catch (err) {
+      console.error('Could not delete fact:', err);
+    }
+  }
+
+  async function addFact() {
+    const category = document.getElementById('new-fact-category').value;
+    const content = document.getElementById('new-fact-content').value.trim();
+
+    if (!content) return;
+
+    try {
+      await fetch('/profile/fact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category, content })
+      });
+
+      // Clear input
+      document.getElementById('new-fact-content').value = '';
+
+      // Reload editor and profile
+      await loadEditor();
+      await refreshProfile();
+
+    } catch (err) {
+      console.error('Could not add fact:', err);
+    }
+  }
+
+  // ─────────────────────────────────────────
+  // Load models
+  // ─────────────────────────────────────────
+  async function loadModels() {
+    try {
+      const response = await fetch('/models');
+      const data = await response.json();
+      availableModels = data.models;
+
+      const select = document.getElementById('model-select');
+      select.innerHTML = '';
+
+      availableModels.forEach(model => {
+        const option = document.createElement('option');
+        option.value = model.key;
+        option.textContent = model.name;
+        option.title = model.description;
+        if (model.key === currentModel) option.selected = true;
+        select.appendChild(option);
+      });
+    } catch (err) {
+      console.error('Could not load models:', err);
+    }
+  }
+
+  // ─────────────────────────────────────────
+  // Handle model switch
+  // ─────────────────────────────────────────
+  function onModelChange() {
+    const select = document.getElementById('model-select');
+    const newModel = select.value;
+    if (newModel === currentModel) return;
+
+    const newModelName = availableModels.find(m => m.key === newModel)?.name || newModel;
+    currentModel = newModel;
+
+    const messagesEl = document.getElementById('messages');
+    const welcome = document.getElementById('welcome');
+    if (welcome) welcome.remove();
+
+    const notice = document.createElement('div');
+    notice.className = 'model-switch-notice';
+    notice.textContent = `switched to ${newModelName} — memory profile stays the same`;
+    messagesEl.appendChild(notice);
+    scrollToBottom();
+  }
 
   // ─────────────────────────────────────────
   // Send message
@@ -614,46 +1058,34 @@
     const message = input.value.trim();
     if (!message || isStreaming) return;
 
-    // Hide welcome screen on first message
     const welcome = document.getElementById('welcome');
     if (welcome) welcome.remove();
 
-    // Clear input
     input.value = '';
     autoResize(input);
-
-    // Add user message to UI
     appendMessage('user', message);
     messageCount++;
 
-    // Update session info
     document.getElementById('session-info').textContent =
       `${messageCount} message${messageCount > 1 ? 's' : ''} this session`;
 
-    // Set streaming state
     setStreaming(true);
 
-    // Create assistant message bubble (empty, will fill as stream arrives)
     const assistantBubble = appendMessage('assistant', '');
     const bubbleContent = assistantBubble.querySelector('.message-bubble');
-
-    // Add blinking cursor while streaming
     const cursor = document.createElement('span');
     cursor.className = 'cursor';
     bubbleContent.appendChild(cursor);
 
     try {
-      // Call the backend streaming endpoint
       const response = await fetch('/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message })
+        body: JSON.stringify({ message, model_key: currentModel })
       });
 
       if (!response.ok) throw new Error(`Server error: ${response.status}`);
 
-      // Read the stream chunk by chunk
-      // This is the browser-side of streaming — ReadableStream API
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let fullText = '';
@@ -661,24 +1093,23 @@
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
         const chunk = decoder.decode(value, { stream: true });
         fullText += chunk;
-
-        // Update bubble text, keep cursor at end
+        // Show plain text while streaming for performance
         bubbleContent.textContent = fullText;
         bubbleContent.appendChild(cursor);
-
-        // Auto-scroll to bottom
         scrollToBottom();
       }
 
-      // Remove cursor when done
       cursor.remove();
+      // Render markdown once streaming is complete
+      bubbleContent.innerHTML = marked.parse(fullText);
 
-      // Refresh profile panel after response
-      // Small delay to let extraction complete
-      setTimeout(refreshProfile, 2000);
+      // Refresh both profile and history after response
+      setTimeout(async () => {
+        await refreshProfile();
+        await refreshHistory();
+      }, 2000);
 
     } catch (err) {
       cursor.remove();
@@ -690,27 +1121,133 @@
   }
 
   // ─────────────────────────────────────────
-  // Append a message bubble to the chat
+  // Load a past conversation
   // ─────────────────────────────────────────
-  function appendMessage(role, content) {
-    const messagesEl = document.getElementById('messages');
+  async function loadConversation(conversationId) {
+    try {
+      const response = await fetch(`/conversations/${conversationId}`);
+      const data = await response.json();
 
-    const messageEl = document.createElement('div');
-    messageEl.className = `message ${role}`;
-    messageEl.innerHTML = `
-      <div class="message-role">${role === 'user' ? 'you' : 'varyAI'}</div>
-      <div class="message-bubble">${content}</div>
+      // Clear current chat
+      const messagesEl = document.getElementById('messages');
+      messagesEl.innerHTML = '';
+
+      // Restore messages
+      data.messages.forEach(msg => {
+        appendMessage(msg.role, msg.content);
+      });
+
+      activeConversationId = conversationId;
+      messageCount = data.messages.filter(m => m.role === 'user').length;
+      document.getElementById('session-info').textContent =
+        `${messageCount} message${messageCount > 1 ? 's' : ''} this session`;
+
+      // Highlight active conversation in sidebar
+      document.querySelectorAll('.conversation-item').forEach(el => {
+        el.classList.toggle('active', parseInt(el.dataset.id) === conversationId);
+      });
+
+      scrollToBottom();
+
+    } catch (err) {
+      console.error('Could not load conversation:', err);
+    }
+  }
+
+  // ─────────────────────────────────────────
+  // Delete a conversation
+  // ─────────────────────────────────────────
+  async function deleteConversation(conversationId, event) {
+    event.stopPropagation(); // Don't trigger loadConversation
+
+    try {
+      await fetch(`/conversations/${conversationId}`, { method: 'DELETE' });
+      await refreshHistory();
+
+      // If we deleted the active conversation, clear the chat
+      if (activeConversationId === conversationId) {
+        startNewChat();
+      }
+    } catch (err) {
+      console.error('Could not delete conversation:', err);
+    }
+  }
+
+  // ─────────────────────────────────────────
+  // Start new chat
+  // ─────────────────────────────────────────
+  async function startNewChat() {
+    await fetch('/conversation', { method: 'DELETE' });
+
+    const messagesEl = document.getElementById('messages');
+    messagesEl.innerHTML = `
+      <div class="welcome" id="welcome">
+        <div class="welcome-title">Hello, I'm <em>varyAI</em></div>
+        <div class="welcome-sub">
+          I remember you across every conversation.<br/>
+          Your memory lives on your device — private, portable, yours.
+        </div>
+      </div>
     `;
 
-    messagesEl.appendChild(messageEl);
-    scrollToBottom();
-    return messageEl;
+    activeConversationId = null;
+    messageCount = 0;
+    document.getElementById('session-info').textContent = 'new session';
+
+    document.querySelectorAll('.conversation-item').forEach(el => {
+      el.classList.remove('active');
+    });
+  }
+
+  // ─────────────────────────────────────────
+  // Refresh conversation history panel
+  // ─────────────────────────────────────────
+  async function refreshHistory() {
+    try {
+      const response = await fetch('/conversations');
+      const data = await response.json();
+      renderHistory(data.conversations);
+    } catch (err) {
+      console.error('Could not load history:', err);
+    }
+  }
+
+  function renderHistory(conversations) {
+    const container = document.getElementById('history-content');
+
+    let html = `<button class="new-chat-btn" onclick="startNewChat()">+ New conversation</button>`;
+
+    if (!conversations || conversations.length === 0) {
+      html += '<p class="profile-empty">No conversations yet.</p>';
+      container.innerHTML = html;
+      return;
+    }
+
+    conversations.forEach(conv => {
+      const date = new Date(conv.updated_at);
+      const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const isActive = conv.id === activeConversationId;
+
+      html += `
+        <div class="conversation-item ${isActive ? 'active' : ''}"
+             data-id="${conv.id}"
+             onclick="loadConversation(${conv.id})">
+          <div class="conversation-title">${conv.title}</div>
+          <div class="conversation-meta">
+            <span>${dateStr}</span>
+            <button class="conversation-delete"
+                    onclick="deleteConversation(${conv.id}, event)"
+                    title="Delete">✕</button>
+          </div>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
   }
 
   // ─────────────────────────────────────────
   // Refresh profile panel
-  // Fetches latest profile from backend and
-  // re-renders the sidebar
   // ─────────────────────────────────────────
   async function refreshProfile() {
     try {
@@ -725,19 +1262,10 @@
   function renderProfile(profileText) {
     const container = document.getElementById('profile-content');
 
-    // If profile is empty
     if (!profileText || profileText.includes('No profile data yet')) {
       container.innerHTML = '<p class="profile-empty">Your profile is empty.<br/>Start chatting — I\'ll learn as we talk.</p>';
       return;
     }
-
-    // Parse the formatted profile text into sections
-    // Profile text format:
-    // PREFERENCES:
-    //   - fact one
-    //   - fact two
-    // PROJECTS:
-    //   - fact three
 
     const lines = profileText.split('\n');
     let html = '';
@@ -759,43 +1287,46 @@
     lines.forEach(line => {
       const trimmed = line.trim();
       if (!trimmed) return;
-
-      // Category header line (e.g. "PREFERENCES:")
       if (trimmed.endsWith(':') && !trimmed.startsWith('-')) {
         flushCategory();
         currentCategory = trimmed.replace(':', '');
         facts = [];
-      }
-      // Fact line
-      else if (trimmed.startsWith('-')) {
+      } else if (trimmed.startsWith('-')) {
         facts.push(trimmed.replace(/^-\s*/, ''));
       }
     });
 
-    flushCategory(); // flush last category
-
+    flushCategory();
     container.innerHTML = html || '<p class="profile-empty">Your profile is empty.<br/>Start chatting — I\'ll learn as we talk.</p>';
   }
 
   // ─────────────────────────────────────────
-  // Clear conversation
+  // Append message bubble
+  // ─────────────────────────────────────────
+  function appendMessage(role, content) {
+    const messagesEl = document.getElementById('messages');
+    const messageEl = document.createElement('div');
+    messageEl.className = `message ${role}`;
+
+    // Render markdown for assistant messages
+    const renderedContent = role === 'assistant' && content
+      ? marked.parse(content)
+      : content;
+
+    messageEl.innerHTML = `
+      <div class="message-role">${role === 'user' ? 'you' : 'varyAI'}</div>
+      <div class="message-bubble">${renderedContent}</div>
+    `;
+    messagesEl.appendChild(messageEl);
+    scrollToBottom();
+    return messageEl;
+  }
+
+  // ─────────────────────────────────────────
+  // Clear conversation (header button)
   // ─────────────────────────────────────────
   async function clearConversation() {
-    await fetch('/conversation', { method: 'DELETE' });
-
-    const messagesEl = document.getElementById('messages');
-    messagesEl.innerHTML = `
-      <div class="welcome" id="welcome">
-        <div class="welcome-title">Hello, I'm <em>varyAI</em></div>
-        <div class="welcome-sub">
-          I remember you across every conversation.<br/>
-          Your memory lives on your device — private, portable, yours.
-        </div>
-      </div>
-    `;
-
-    messageCount = 0;
-    document.getElementById('session-info').textContent = 'new session';
+    await startNewChat();
   }
 
   // ─────────────────────────────────────────
@@ -805,6 +1336,7 @@
     isStreaming = state;
     document.getElementById('send-btn').disabled = state;
     document.getElementById('message-input').disabled = state;
+    document.getElementById('model-select').disabled = state;
 
     const dot = document.getElementById('status-dot');
     const text = document.getElementById('status-text');
@@ -833,6 +1365,64 @@
   function scrollToBottom() {
     const messages = document.getElementById('messages');
     messages.scrollTop = messages.scrollHeight;
+  }
+
+  // ─────────────────────────────────────────
+  // Export profile as JSON
+  // ─────────────────────────────────────────
+  async function exportProfile() {
+    try {
+      const response = await fetch('/profile/export');
+      const data = await response.json();
+
+      // Trigger browser download
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: 'application/json'
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'varyai-profile.json';
+      a.click();
+      URL.revokeObjectURL(url);
+
+    } catch (err) {
+      console.error('Export failed:', err);
+    }
+  }
+
+  // ─────────────────────────────────────────
+  // Import profile from JSON
+  // ─────────────────────────────────────────
+  async function importProfile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+
+      const response = await fetch('/profile/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      const result = await response.json();
+
+      // Refresh both profile and editor
+      await refreshProfile();
+      await loadEditor();
+
+      alert(result.message);
+
+    } catch (err) {
+      console.error('Import failed:', err);
+      alert('Import failed — make sure this is a valid varyAI export file.');
+    }
+
+    // Reset file input so same file can be imported again
+    event.target.value = '';
   }
 </script>
 

@@ -40,31 +40,29 @@ from backend.profile_store import save_facts
 # need the LLM to return structured data like JSON.
 
 EXTRACTION_PROMPT = """
-You are an expert at identifying personal information about a user from conversations.
-Your job is to extract facts that would help an AI assistant know the user better in future conversations.
+You are a precise fact extractor. Your job is to extract ONLY explicitly stated facts about the user from conversations.
 
-Analyze the conversation below and extract facts about the user into these categories:
+STRICT RULES:
+- ONLY extract facts the user directly stated about themselves
+- NEVER infer, assume, or extrapolate beyond what was explicitly said
+- NEVER extract facts about general topics or the AI's responses
+- If the user says "I am a student", extract "Is a student" — nothing more
+- If unsure whether something was explicitly stated, skip it
 
-- preferences: How they like to work, communicate, tools they use, things they like/dislike
-- projects: What they are currently building, working on, or planning
-- skills: Their technical abilities, knowledge areas, experience levels
-- history: Decisions they've made, things they've mentioned that give context about them
+Categories:
+- preferences: Explicitly stated likes, dislikes, tools, habits
+- projects: Explicitly mentioned current work or plans
+- skills: Explicitly stated abilities or knowledge areas
+- history: Explicitly stated background facts about themselves
 
-Return ONLY a JSON object in this exact format, nothing else, no explanation, no markdown:
+Return ONLY this JSON, no explanation, no markdown:
 {
     "facts": [
-        {"category": "skills", "content": "Knows Python well but is relearning syntax"},
-        {"category": "projects", "content": "Building varyAI, a local-first AI memory system"}
+        {"category": "history", "content": "Second year chemical engineering student at IIT Roorkee"}
     ]
 }
 
-Rules:
-- Only extract facts ABOUT THE USER, not general information
-- Only extract meaningful, reusable facts — not conversation-specific details
-- If the user corrects something, extract the correction not the original
-- If nothing meaningful can be extracted, return: {"facts": []}
-- Keep each fact concise — one clear statement per fact
-- Never invent facts — only extract what was explicitly said or clearly implied
+If nothing was explicitly stated about the user, return: {"facts": []}
 
 CONVERSATION:
 {conversation}

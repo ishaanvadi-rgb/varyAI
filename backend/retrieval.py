@@ -326,3 +326,68 @@ def sync_existing_facts() -> None:
 
     finally:
         conn.close()
+
+
+def find_conflicting_fact(content: str, category: str, threshold: float = 0.75) -> str | None:
+    """
+    Check if a semantically similar fact already exists in the profile.
+
+    If similarity is above threshold, we consider it a conflict —
+    the new fact is an update to the existing one, not a new fact.
+
+    Args:
+        content:   The new fact being considered for saving
+        category:  The category to search within
+        threshold: Similarity score above which we consider it a conflict
+                   0.75 is high enough to catch genuine conflicts
+                   without false positives on unrelated facts
+
+    Returns:
+        The ChromaDB document ID of the conflicting fact, or None
+
+    AI Engineering Concept — Semantic deduplication:
+    Simple string matching catches exact duplicates ("Has Python experience"
+    == "Has Python experience"). But it misses paraphrases like
+    "Knows Python well" vs "Has experience with Python" — these mean
+    the same thing but are textually different.
+    Embedding similarity catches both cases because similar meanings
+    produce similar vectors, regardless of exact wording.
+    """
+    if _collection is None or _collection.count() == 0:
+        return None
+
+    query_embedding = embed_text(content)
+
+    # Search only within the same category
+    results = _collection.query(
+        query_embeddings=[query_embedding],
+        n_results=min(3, _collection.count()),
+        where={"category": category},
+        include=["documents", "metadatas", "distances"]
+    )
+
+    if not results["ids"][0]:
+        return None
+
+    for doc_id, distance in zip(results["ids"][0], results["distances"][0]):
+        similarity = 1 - distance
+        if similarity >= threshold:
+            return doc_id  # Return ID of conflicting fact
+
+    return None
+
+
+def delete_fact_from_index(fact_id: int) -> None:
+    """
+    Remove a fact from the ChromaDB vector index.
+
+    Args:
+        fact_id: The SQLite row ID (used as ChromaDB document ID)
+    """
+    if _collection is None:
+        return
+    try:
+        _collection.delete(ids=[str(fact_id)])
+        print(f"✓ Removed fact {fact_id} from vector index")
+    except Exception as e:
+        print(f"⚠ Could not remove fact from index: {e}")
