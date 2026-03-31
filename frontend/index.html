@@ -634,6 +634,92 @@
       color: var(--accent);
     }
 
+    /* Import URL section */
+    .import-url-section {
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .import-url-form {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .import-url-input {
+      flex: 1;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      padding: 7px 10px;
+      border-radius: 4px;
+      outline: none;
+      transition: border-color var(--transition);
+      min-width: 0;
+    }
+
+    .import-url-input:focus {
+      border-color: var(--accent-dim);
+    }
+
+    .import-url-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .import-url-btn {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: var(--accent);
+      color: var(--bg-base);
+      border: none;
+      padding: 7px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all var(--transition);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .import-url-btn:hover {
+      background: #d4b87a;
+    }
+
+    .import-url-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .import-url-hint {
+      font-size: 9px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .import-status {
+      font-size: 10px;
+      padding: 8px 10px;
+      border-radius: 4px;
+      margin-top: 8px;
+      animation: fadeIn 0.3s ease forwards;
+    }
+
+    .import-status.success {
+      background: rgba(200, 169, 110, 0.1);
+      color: var(--accent);
+      border: 1px solid var(--border-accent);
+    }
+
+    .import-status.error {
+      background: rgba(224, 108, 108, 0.1);
+      color: #e06c6c;
+      border: 1px solid rgba(224, 108, 108, 0.25);
+    }
+
     /* Export/Import bar */
     .export-import-bar {
       display: flex;
@@ -1235,7 +1321,22 @@
   function renderHistory(conversations) {
     const container = document.getElementById('history-content');
 
-    let html = `<button class="new-chat-btn" onclick="startNewChat()">+ New conversation</button>`;
+    let html = `<button class="new-chat-btn" onclick="startNewChat()">+ New conversation</button>
+    <div class="import-url-section">
+      <div class="section-label">Import conversation</div>
+      <div class="import-url-form">
+        <input
+          type="text"
+          id="import-url-input"
+          placeholder="Paste ChatGPT share link..."
+          class="import-url-input"
+        />
+        <button class="import-url-btn" onclick="importFromUrl()">Import</button>
+      </div>
+      <div class="import-url-hint">
+        Paste a chatgpt.com/share/... link to continue the conversation in varyAI
+      </div>
+    </div>`;
 
     if (!conversations || conversations.length === 0) {
       html += '<p class="profile-empty">No conversations yet.</p>';
@@ -1385,6 +1486,89 @@
   function scrollToBottom() {
     const messages = document.getElementById('messages');
     messages.scrollTop = messages.scrollHeight;
+  }
+
+  // ─────────────────────────────────────────
+  // Import conversation from URL
+  // ─────────────────────────────────────────
+  async function importFromUrl() {
+    const input = document.getElementById('import-url-input');
+    const btn = document.querySelector('.import-url-btn');
+    const url = input.value.trim();
+
+    if (!url) return;
+
+    // Show loading state
+    btn.disabled = true;
+    btn.textContent = 'Importing...';
+
+    // Remove any existing status
+    const existingStatus = document.querySelector('.import-status');
+    if (existingStatus) existingStatus.remove();
+
+    try {
+      const response = await fetch('/import/url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        showImportStatus(data.detail || 'Import failed', 'error');
+        return;
+      }
+
+      // Success — load the imported conversation into the chat
+      showImportStatus(
+        `✓ Imported ${data.message_count} messages from ${data.title}`,
+        'success'
+      );
+
+      // Load into chat UI
+      const messagesEl = document.getElementById('messages');
+      const welcome = document.getElementById('welcome');
+      if (welcome) welcome.remove();
+      messagesEl.innerHTML = '';
+
+      // Fetch and render the imported messages
+      const convResponse = await fetch(`/conversations/${data.conversation_id}`);
+      const convData = await convResponse.json();
+      convData.messages.forEach(msg => appendMessage(msg.role, msg.content));
+
+      activeConversationId = data.conversation_id;
+      messageCount = convData.messages.filter(m => m.role === 'user').length;
+      document.getElementById('session-info').textContent =
+        `${messageCount} messages imported`;
+
+      // Clear the input
+      input.value = '';
+
+      // Refresh history and profile
+      await refreshHistory();
+      setTimeout(refreshProfile, 3000);
+
+      scrollToBottom();
+
+    } catch (err) {
+      showImportStatus('Network error. Is the backend running?', 'error');
+      console.error(err);
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Import';
+  }
+
+  function showImportStatus(message, type) {
+    const form = document.querySelector('.import-url-form');
+    const existing = document.querySelector('.import-status');
+    if (existing) existing.remove();
+
+    const status = document.createElement('div');
+    status.className = `import-status ${type}`;
+    status.textContent = message;
+    form.after(status);
   }
 
   // ─────────────────────────────────────────

@@ -54,6 +54,7 @@ from backend.llm_client import initialize_model, stream_response, refresh_system
 from backend.extraction import extract_and_save
 from backend.prompt_builder import build_conversation_messages
 from backend.retrieval import initialize_retrieval, sync_existing_facts
+from backend.importer import import_from_url
 
 
 # ─────────────────────────────────────────────
@@ -410,6 +411,44 @@ async def chat(request: ChatRequest):
         generate(),
         media_type="text/plain"
     )
+
+
+@app.post("/import/url")
+async def import_conversation_from_url(request: dict):
+    """
+    Import a conversation from a ChatGPT share URL.
+    Saves it as a new conversation and returns its ID.
+    """
+    global conversation_history, current_conversation_id
+
+    url = request.get("url", "").strip()
+    if not url:
+        raise HTTPException(status_code=400, detail="url is required")
+
+    result = await import_from_url(url)
+
+    if result.get("error") or not result.get("messages"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Could not import from that URL"))
+
+    messages = result["messages"]
+    title = result.get("title") or "Imported Conversation"
+
+    # Save to database as a new conversation
+    conv_id = create_conversation("imported")
+    update_conversation_title(conv_id, title)
+    for msg in messages:
+        save_message(conv_id, msg["role"], msg["content"])
+
+    # Restore as the active conversation
+    conversation_history = messages
+    current_conversation_id = conv_id
+
+    return {
+        "conversation_id": conv_id,
+        "title":           title,
+        "message_count":   len(messages),
+        "platform":        result.get("platform"),
+    }
 
 
 @app.delete("/conversation")
