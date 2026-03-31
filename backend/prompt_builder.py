@@ -58,34 +58,31 @@ Guidelines for using the user's profile:
 """
 
 
-def build_system_prompt() -> str:
+def build_system_prompt(query: str = "") -> str:
     """
-    Construct the full system prompt by combining:
-    1. varyAI's base identity and personality
-    2. Instructions for using the profile
-    3. The user's actual profile data
+    Construct the full system prompt with RAG-powered profile retrieval.
 
-    This is called fresh before every conversation starts,
-    ensuring the LLM always has the most up-to-date profile.
+    If a query is provided, retrieves only semantically relevant facts.
+    If no query (e.g. at initialisation), falls back to full profile.
+
+    Args:
+        query: The user's current message for semantic retrieval
 
     Returns:
-        A complete system prompt string ready to send to the LLM API.
-
-    AI Engineering Concept — Why rebuild every time?
-    We rebuild the system prompt before every conversation rather than
-    caching it because the profile updates in real-time. If we cached it,
-    facts extracted from the current conversation wouldn't be available
-    until the next session. Fresh prompt = always current memory.
+        Complete system prompt string ready to send to the LLM API.
     """
+    if query:
+        # RAG — retrieve only relevant facts for this specific query
+        try:
+            from backend.retrieval import get_relevant_profile_summary
+            profile_context = get_relevant_profile_summary(query)
+        except Exception:
+            # Fall back to full profile if retrieval fails
+            profile_context = get_profile_summary()
+    else:
+        # No query available — use full profile (fallback)
+        profile_context = get_profile_summary()
 
-    # Get the formatted profile string from profile_store
-    profile_summary = get_profile_summary()
-
-    # Assemble the full system prompt
-    # The structure is deliberate:
-    # 1. Who varyAI is (identity)
-    # 2. How to use the profile (instructions)  
-    # 3. What the profile contains (data)
     system_prompt = f"""
 {BASE_IDENTITY}
 
@@ -93,10 +90,9 @@ def build_system_prompt() -> str:
 
 ---
 WHAT YOU KNOW ABOUT THIS USER:
-{profile_summary}
+{profile_context}
 ---
 """
-
     return system_prompt.strip()
 
 

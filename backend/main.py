@@ -41,6 +41,7 @@ from backend.profile_store import initialize_database, get_profile_summary
 from backend.llm_client import initialize_model, stream_response, refresh_system_prompt
 from backend.extraction import extract_and_save
 from backend.prompt_builder import build_conversation_messages
+from backend.retrieval import initialize_retrieval, sync_existing_facts
 
 
 # ─────────────────────────────────────────────
@@ -80,8 +81,10 @@ async def lifespan(app: FastAPI):
 
     # Step 1: Initialize the database (creates tables if they don't exist)
     initialize_database()
+    initialize_retrieval()    # ← add this
+    sync_existing_facts()     # ← and this
 
-    # Step 2: Initialize the Gemini model with current profile
+    # Step 2: Initialize the model with current profile
     model = initialize_model()
 
     print("✓ varyAI is ready\n")

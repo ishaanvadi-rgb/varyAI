@@ -65,9 +65,13 @@ def stream_response(client, messages: list[dict]):
         str: Individual text chunks as they stream from the API
     """
 
-    # System prompt + full conversation history
+    # Use last 2 exchanges for richer retrieval context
+    # More context = better semantic matching
+    recent_context = " ".join([m["content"] for m in messages[-4:]])
+    latest_query = recent_context if recent_context else ""
+
     full_messages = [
-        {"role": "system", "content": build_system_prompt()}
+        {"role": "system", "content": build_system_prompt(query=latest_query)}
     ] + messages
 
     # Stream the response from Groq
