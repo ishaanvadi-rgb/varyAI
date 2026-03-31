@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+
+# Poetry
+dist/
+*.egg-info/
+
+# Environment variables — MOST IMPORTANT
+.env
+
+# Database — your personal profile data
+*.db
+*.sqlite
+*.sqlite3
+
+# VS Code
+.vscode/
+
+# Mac junk
+.DS_Store
+
+# Logs
+*.log

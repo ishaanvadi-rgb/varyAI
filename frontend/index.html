@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>varyAI</title>
+
+  <!-- 
+    Typography choices:
+    - DM Serif Display: elegant, literary — used for the logo and headings
+    - IBM Plex Mono: technical, personal, journal-like — used for all content
+    These two fonts together create the "private notebook meets intelligent terminal" feel
+  -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─────────────────────────────────────────
+       Design tokens — all colors and values
+       defined here for consistency
+    ───────────────────────────────────────── */
+    :root {
+      --bg-base:        #0e0e0e;
+      --bg-surface:     #151515;
+      --bg-elevated:    #1c1c1c;
+      --bg-hover:       #222222;
+
+      --text-primary:   #f0ebe0;
+      --text-secondary: #8a8070;
+      --text-muted:     #4a4540;
+
+      --accent:         #c8a96e;      /* warm amber — the single accent color */
+      --accent-dim:     #7a6640;
+      --accent-glow:    rgba(200, 169, 110, 0.12);
+
+      --border:         #252525;
+      --border-accent:  rgba(200, 169, 110, 0.25);
+
+      --font-display:   'DM Serif Display', Georgia, serif;
+      --font-mono:      'IBM Plex Mono', 'Courier New', monospace;
+
+      --sidebar-width:  300px;
+      --transition:     0.2s ease;
+    }
+
+    /* ─────────────────────────────────────────
+       Reset and base
+    ───────────────────────────────────────── */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      background: var(--bg-base);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Subtle grain overlay — adds depth and warmth to the dark background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 1000;
+      opacity: 0.4;
+    }
+
+    /* ─────────────────────────────────────────
+       Layout
+    ───────────────────────────────────────── */
+    .app {
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* ─────────────────────────────────────────
+       Sidebar — live profile viewer
+    ───────────────────────────────────────── */
+    .sidebar {
+      width: var(--sidebar-width);
+      min-width: var(--sidebar-width);
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: fadeInLeft 0.6s ease forwards;
+    }
+
+    .sidebar-header {
+      padding: 28px 24px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      font-family: var(--font-display);
+      font-size: 22px;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+      margin-bottom: 2px;
+    }
+
+    .logo span {
+      color: var(--accent);
+      font-style: italic;
+    }
+
+    .logo-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .sidebar-section {
+      padding: 20px 24px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .sidebar-section::-webkit-scrollbar {
+      width: 3px;
+    }
+
+    .sidebar-section::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .sidebar-section::-webkit-scrollbar-thumb {
+      background: var(--text-muted);
+      border-radius: 2px;
+    }
+
+    .section-label {
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* Profile category blocks */
+    .profile-category {
+      margin-bottom: 20px;
+    }
+
+    .category-title {
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent-dim);
+      margin-bottom: 8px;
+    }
+
+    .category-facts {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .fact-item {
+      font-size: 11px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      padding: 6px 10px;
+      background: var(--bg-elevated);
+      border-radius: 4px;
+      border-left: 2px solid var(--border);
+      transition: border-color var(--transition);
+      animation: factAppear 0.4s ease forwards;
+    }
+
+    /* New facts pulse with amber border briefly */
+    .fact-item.new {
+      border-left-color: var(--accent);
+      animation: factPulse 1.5s ease forwards;
+    }
+
+    .profile-empty {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-style: italic;
+      line-height: 1.6;
+    }
+
+    /* Status indicator at bottom of sidebar */
+    .sidebar-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      transition: background var(--transition);
+    }
+
+    .status-dot.active {
+      background: var(--accent);
+      box-shadow: 0 0 6px var(--accent);
+      animation: pulse 2s infinite;
+    }
+
+    .status-text {
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+    }
+
+    /* ─────────────────────────────────────────
+       Main chat area
+    ───────────────────────────────────────── */
+    .chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: fadeIn 0.5s ease forwards;
+    }
+
+    /* Top bar */
+    .chat-header {
+      padding: 20px 32px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .chat-header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .model-badge {
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: var(--accent-glow);
+      border: 1px solid var(--border-accent);
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    .session-info {
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+    }
+
+    .clear-btn {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      background: none;
+      border: 1px solid var(--border);
+      padding: 5px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .clear-btn:hover {
+      color: var(--text-primary);
+      border-color: var(--text-muted);
+    }
+
+    /* Messages */
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .messages::-webkit-scrollbar {
+      width: 3px;
+    }
+
+    .messages::-webkit-scrollbar-thumb {
+      background: var(--text-muted);
+      border-radius: 2px;
+    }
+
+    /* Welcome state — shown when no messages yet */
+    .welcome {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 12px;
+      opacity: 0;
+      animation: fadeIn 0.8s ease 0.3s forwards;
+    }
+
+    .welcome-title {
+      font-family: var(--font-display);
+      font-size: 32px;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+
+    .welcome-title em {
+      color: var(--accent);
+    }
+
+    .welcome-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      max-width: 320px;
+      line-height: 1.8;
+    }
+
+    /* Message bubbles */
+    .message {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      animation: messageAppear 0.3s ease forwards;
+      max-width: 760px;
+    }
+
+    .message.user {
+      align-self: flex-end;
+      align-items: flex-end;
+    }
+
+    .message.assistant {
+      align-self: flex-start;
+      align-items: flex-start;
+    }
+
+    .message-role {
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 0 4px;
+    }
+
+    .message.user .message-role {
+      color: var(--accent-dim);
+    }
+
+    .message-bubble {
+      padding: 14px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.75;
+      max-width: 100%;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .message.user .message-bubble {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      border-bottom-right-radius: 2px;
+    }
+
+    .message.assistant .message-bubble {
+      background: transparent;
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 2px;
+    }
+
+    /* Streaming cursor — the blinking line while AI is typing */
+    .cursor {
+      display: inline-block;
+      width: 2px;
+      height: 14px;
+      background: var(--accent);
+      margin-left: 2px;
+      vertical-align: middle;
+      animation: blink 0.8s step-end infinite;
+    }
+
+    /* ─────────────────────────────────────────
+       Input area
+    ───────────────────────────────────────── */
+    .input-area {
+      padding: 20px 32px 28px;
+      border-top: 1px solid var(--border);
+    }
+
+    .input-wrapper {
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      transition: border-color var(--transition);
+    }
+
+    .input-wrapper:focus-within {
+      border-color: var(--accent-dim);
+    }
+
+    #message-input {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-primary);
+      resize: none;
+      line-height: 1.6;
+      max-height: 120px;
+      min-height: 20px;
+    }
+
+    #message-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .send-btn {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: var(--accent);
+      color: var(--bg-base);
+      border: none;
+      padding: 7px 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all var(--transition);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .send-btn:hover:not(:disabled) {
+      background: #d4b87a;
+    }
+
+    .send-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .input-hint {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 8px;
+      padding: 0 4px;
+    }
+
+    /* ─────────────────────────────────────────
+       Animations
+    ───────────────────────────────────────── */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    @keyframes fadeInLeft {
+      from { opacity: 0; transform: translateX(-12px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes messageAppear {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes factAppear {
+      from { opacity: 0; transform: translateX(-6px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes factPulse {
+      0%   { border-left-color: var(--accent); background: var(--accent-glow); }
+      60%  { border-left-color: var(--accent); background: var(--accent-glow); }
+      100% { border-left-color: var(--border); background: var(--bg-elevated); }
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0; }
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 4px var(--accent); }
+      50%       { box-shadow: 0 0 10px var(--accent); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ── Sidebar: live profile viewer ── -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">vary<span>AI</span></div>
+      <div class="logo-sub">Local Memory · Private by Design</div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-label">What I know about you</div>
+      <div id="profile-content">
+        <p class="profile-empty">Your profile is empty.<br/>Start chatting — I'll learn as we talk.</p>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="status-dot" id="status-dot"></div>
+      <span class="status-text" id="status-text">ready</span>
+    </div>
+  </aside>
+
+  <!-- ── Main chat area ── -->
+  <main class="chat-area">
+    <div class="chat-header">
+      <div class="chat-header-left">
+        <div class="model-badge">Llama 3.3 · 70B</div>
+        <div class="session-info" id="session-info">new session</div>
+      </div>
+      <button class="clear-btn" onclick="clearConversation()">Clear session</button>
+    </div>
+
+    <div class="messages" id="messages">
+      <div class="welcome" id="welcome">
+        <div class="welcome-title">Hello, I'm <em>varyAI</em></div>
+        <div class="welcome-sub">
+          I remember you across every conversation.<br/>
+          Your memory lives on your device — private, portable, yours.
+        </div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="input-wrapper">
+        <textarea
+          id="message-input"
+          placeholder="Say anything..."
+          rows="1"
+          onkeydown="handleKeydown(event)"
+          oninput="autoResize(this)"
+        ></textarea>
+        <button class="send-btn" id="send-btn" onclick="sendMessage()">Send</button>
+      </div>
+      <div class="input-hint">Enter to send · Shift+Enter for new line</div>
+    </div>
+  </main>
+
+</div>
+
+<script>
+  // ─────────────────────────────────────────
+  // State
+  // ─────────────────────────────────────────
+  let isStreaming = false;
+  let messageCount = 0;
+
+  // ─────────────────────────────────────────
+  // On load
+  // ─────────────────────────────────────────
+  window.addEventListener('load', async () => {
+    // Load existing profile on startup
+    await refreshProfile();
+    // Focus input
+    document.getElementById('message-input').focus();
+  });
+
+  // ─────────────────────────────────────────
+  // Send message
+  // ─────────────────────────────────────────
+  async function sendMessage() {
+    const input = document.getElementById('message-input');
+    const message = input.value.trim();
+    if (!message || isStreaming) return;
+
+    // Hide welcome screen on first message
+    const welcome = document.getElementById('welcome');
+    if (welcome) welcome.remove();
+
+    // Clear input
+    input.value = '';
+    autoResize(input);
+
+    // Add user message to UI
+    appendMessage('user', message);
+    messageCount++;
+
+    // Update session info
+    document.getElementById('session-info').textContent =
+      `${messageCount} message${messageCount > 1 ? 's' : ''} this session`;
+
+    // Set streaming state
+    setStreaming(true);
+
+    // Create assistant message bubble (empty, will fill as stream arrives)
+    const assistantBubble = appendMessage('assistant', '');
+    const bubbleContent = assistantBubble.querySelector('.message-bubble');
+
+    // Add blinking cursor while streaming
+    const cursor = document.createElement('span');
+    cursor.className = 'cursor';
+    bubbleContent.appendChild(cursor);
+
+    try {
+      // Call the backend streaming endpoint
+      const response = await fetch('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message })
+      });
+
+      if (!response.ok) throw new Error(`Server error: ${response.status}`);
+
+      // Read the stream chunk by chunk
+      // This is the browser-side of streaming — ReadableStream API
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        fullText += chunk;
+
+        // Update bubble text, keep cursor at end
+        bubbleContent.textContent = fullText;
+        bubbleContent.appendChild(cursor);
+
+        // Auto-scroll to bottom
+        scrollToBottom();
+      }
+
+      // Remove cursor when done
+      cursor.remove();
+
+      // Refresh profile panel after response
+      // Small delay to let extraction complete
+      setTimeout(refreshProfile, 2000);
+
+    } catch (err) {
+      cursor.remove();
+      bubbleContent.textContent = 'Something went wrong. Is the backend running?';
+      console.error(err);
+    }
+
+    setStreaming(false);
+  }
+
+  // ─────────────────────────────────────────
+  // Append a message bubble to the chat
+  // ─────────────────────────────────────────
+  function appendMessage(role, content) {
+    const messagesEl = document.getElementById('messages');
+
+    const messageEl = document.createElement('div');
+    messageEl.className = `message ${role}`;
+    messageEl.innerHTML = `
+      <div class="message-role">${role === 'user' ? 'you' : 'varyAI'}</div>
+      <div class="message-bubble">${content}</div>
+    `;
+
+    messagesEl.appendChild(messageEl);
+    scrollToBottom();
+    return messageEl;
+  }
+
+  // ─────────────────────────────────────────
+  // Refresh profile panel
+  // Fetches latest profile from backend and
+  // re-renders the sidebar
+  // ─────────────────────────────────────────
+  async function refreshProfile() {
+    try {
+      const response = await fetch('/profile');
+      const data = await response.json();
+      renderProfile(data.profile);
+    } catch (err) {
+      console.error('Could not load profile:', err);
+    }
+  }
+
+  function renderProfile(profileText) {
+    const container = document.getElementById('profile-content');
+
+    // If profile is empty
+    if (!profileText || profileText.includes('No profile data yet')) {
+      container.innerHTML = '<p class="profile-empty">Your profile is empty.<br/>Start chatting — I\'ll learn as we talk.</p>';
+      return;
+    }
+
+    // Parse the formatted profile text into sections
+    // Profile text format:
+    // PREFERENCES:
+    //   - fact one
+    //   - fact two
+    // PROJECTS:
+    //   - fact three
+
+    const lines = profileText.split('\n');
+    let html = '';
+    let currentCategory = null;
+    let facts = [];
+
+    const flushCategory = () => {
+      if (currentCategory && facts.length > 0) {
+        html += `<div class="profile-category">`;
+        html += `<div class="category-title">${currentCategory}</div>`;
+        html += `<div class="category-facts">`;
+        facts.forEach(fact => {
+          html += `<div class="fact-item">${fact}</div>`;
+        });
+        html += `</div></div>`;
+      }
+    };
+
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+
+      // Category header line (e.g. "PREFERENCES:")
+      if (trimmed.endsWith(':') && !trimmed.startsWith('-')) {
+        flushCategory();
+        currentCategory = trimmed.replace(':', '');
+        facts = [];
+      }
+      // Fact line
+      else if (trimmed.startsWith('-')) {
+        facts.push(trimmed.replace(/^-\s*/, ''));
+      }
+    });
+
+    flushCategory(); // flush last category
+
+    container.innerHTML = html || '<p class="profile-empty">Your profile is empty.<br/>Start chatting — I\'ll learn as we talk.</p>';
+  }
+
+  // ─────────────────────────────────────────
+  // Clear conversation
+  // ─────────────────────────────────────────
+  async function clearConversation() {
+    await fetch('/conversation', { method: 'DELETE' });
+
+    const messagesEl = document.getElementById('messages');
+    messagesEl.innerHTML = `
+      <div class="welcome" id="welcome">
+        <div class="welcome-title">Hello, I'm <em>varyAI</em></div>
+        <div class="welcome-sub">
+          I remember you across every conversation.<br/>
+          Your memory lives on your device — private, portable, yours.
+        </div>
+      </div>
+    `;
+
+    messageCount = 0;
+    document.getElementById('session-info').textContent = 'new session';
+  }
+
+  // ─────────────────────────────────────────
+  // UI helpers
+  // ─────────────────────────────────────────
+  function setStreaming(state) {
+    isStreaming = state;
+    document.getElementById('send-btn').disabled = state;
+    document.getElementById('message-input').disabled = state;
+
+    const dot = document.getElementById('status-dot');
+    const text = document.getElementById('status-text');
+
+    if (state) {
+      dot.classList.add('active');
+      text.textContent = 'thinking...';
+    } else {
+      dot.classList.remove('active');
+      text.textContent = 'ready';
+    }
+  }
+
+  function handleKeydown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+
+  function autoResize(textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+  }
+
+  function scrollToBottom() {
+    const messages = document.getElementById('messages');
+    messages.scrollTop = messages.scrollHeight;
+  }
+</script>
+
+</body>
+</html>
