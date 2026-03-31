@@ -7,11 +7,6 @@ by fetching and parsing their public share links.
 Currently supported:
 - ChatGPT (chatgpt.com/share/...)
 
-AI Engineering Concept — Why scraping and not an API?
-OpenAI, Anthropic, and Google don't provide public APIs to fetch
-conversation history from share links. The share page renders as
-public HTML — scraping is the only programmatic way to access it.
-
 Important limitations:
 - This relies on the HTML structure of each platform's share page
 - If the platform changes their HTML, the parser breaks
@@ -66,12 +61,6 @@ async def import_from_url(url: str) -> dict:
         - platform: which platform it came from
         - title: conversation title if available
         - error: error message if import failed
-
-    AI Engineering Concept — Async HTTP:
-    We use httpx instead of the standard requests library because
-    FastAPI is async. Using a synchronous HTTP library inside an
-    async endpoint would block the event loop. httpx provides
-    the same API as requests but works properly with async/await.
     """
     platform = detect_platform(url)
 

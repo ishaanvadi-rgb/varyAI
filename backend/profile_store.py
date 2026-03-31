@@ -8,14 +8,8 @@ sitting on your machine. This is what makes varyAI truly local-first.
 The profile is organized into 4 categories:
 - preferences: how you like to work, communicate, what tools you use
 - projects: what you're currently building or working on
-- history: past decisions, things you've mentioned before
+- history: past decisions and context about the user
 - skills: your expertise level in different areas
-
-AI Engineering Concept — Why SQLite for v1?
-In v1 we inject the full profile into every prompt (simple but works).
-In v3 we'll swap this for a vector database (ChromaDB) that lets us
-retrieve only the RELEVANT facts using semantic search — that's RAG.
-For now, SQLite keeps things simple and learnable.
 """
 
 import sqlite3
@@ -144,13 +138,6 @@ def save_facts(facts: list[dict]) -> None:
     already exists in the same category. If it does, the old fact
     is replaced with the new one — preventing contradictory facts
     from building up over time.
-
-    AI Engineering Concept — Why replace rather than keep both?
-    If the user said "Lives in Delhi" in January and "Moved to Mumbai"
-    in March, keeping both creates a contradiction. The newer fact
-    is always more accurate, so we replace. In a more sophisticated
-    system, we'd also store the old fact with a timestamp for audit
-    purposes — but for v1 replacement is clean and correct.
     """
     if not facts:
         return

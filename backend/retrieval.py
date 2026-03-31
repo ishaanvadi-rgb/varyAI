@@ -1,52 +1,12 @@
 """
 retrieval.py — The semantic retrieval layer for varyAI (v3)
 
-This module replaces the v1 "inject everything" approach with
-intelligent retrieval — fetching only the profile facts that are
-semantically relevant to what the user is currently talking about.
+This module replaces the full-profile injection approach with
+semantic retrieval — fetching only the profile facts that are
+relevant to what the user is currently talking about.
 
-AI Engineering Concept — What is RAG?
-RAG stands for Retrieval Augmented Generation. The pattern is:
-1. RETRIEVE: Find relevant context from a knowledge store
-2. AUGMENT:  Inject that context into the prompt
-3. GENERATE: Let the LLM generate a response with that context
-
-In our case:
-- Knowledge store = user's profile (SQLite + ChromaDB)
-- Retrieval = semantic search using embeddings
-- Augmentation = injecting relevant facts into system prompt
-- Generation = Llama responding with personalized context
-
-AI Engineering Concept — What are embeddings?
-An embedding is a list of numbers (a vector) that represents the
-meaning of a piece of text. Texts with similar meanings have similar
-vectors — their numbers are close to each other in high-dimensional
-space. This is what makes semantic search possible: instead of
-matching keywords, we match meanings.
-
-Example:
-"I love Python programming"  → [0.2, 0.8, 0.1, 0.9, 0.3, ...]
-"My favourite language is Python" → [0.3, 0.7, 0.2, 0.8, 0.4, ...]
-"I enjoy cooking pasta"      → [0.9, 0.1, 0.8, 0.1, 0.7, ...]
-
-The first two are close in vector space (similar meaning).
-The third is far away (different meaning).
-
-AI Engineering Concept — Why ChromaDB?
-ChromaDB is a vector database — a database optimised for storing
-and searching embeddings. It can find the N most similar vectors
-to a query vector extremely efficiently, even across millions of
-entries. We use it to store one embedding per profile fact.
-
-AI Engineering Concept — Why local embeddings?
-We use sentence-transformers to generate embeddings locally on
-your machine instead of calling an API. This means:
-- No cost per embedding
-- No data sent to external servers for this step
-- Works offline
-- Fast enough for our use case
-The model (all-MiniLM-L6-v2) is small (80MB) but produces
-high quality embeddings for semantic similarity tasks.
+Uses ChromaDB for vector storage and sentence-transformers for
+local embedding generation (all-MiniLM-L6-v2, ~80MB).
 """
 
 import chromadb
@@ -81,12 +41,6 @@ def initialize_retrieval() -> None:
     """
     Initialize the embedding model and ChromaDB collection.
     Called once at server startup alongside initialize_database().
-
-    AI Engineering Concept — Lazy vs eager initialisation:
-    We initialise everything eagerly at startup rather than
-    lazily on first use. This means the first user message
-    isn't slow due to model loading — the cost is paid once
-    at startup where it's expected and acceptable.
     """
     global _embedding_model, _chroma_client, _collection
 
@@ -124,11 +78,6 @@ def embed_text(text: str) -> list[float]:
     Returns:
         A list of floats representing the text's meaning
         (384 dimensions for all-MiniLM-L6-v2)
-
-    AI Engineering Concept — Normalisation:
-    We normalise embeddings to unit length before storing them.
-    This makes cosine similarity equivalent to dot product similarity,
-    which ChromaDB can compute more efficiently.
     """
     embedding = _embedding_model.encode(text, normalize_embeddings=True)
     return embedding.tolist()
@@ -145,13 +94,6 @@ def index_fact(fact_id: int, content: str, category: str) -> None:
         fact_id:  The SQLite row ID of the fact (used as ChromaDB ID)
         content:  The text content of the fact
         category: The category (preferences, projects, skills, history)
-
-    AI Engineering Concept — Dual write:
-    We write to both SQLite AND ChromaDB for every fact.
-    SQLite stores the structured data (easy to read, query, edit).
-    ChromaDB stores the embedding (enables semantic search).
-    This duplication is intentional — each database does what
-    it's optimised for. SQLite for structure, ChromaDB for search.
     """
     embedding = embed_text(content)
 
@@ -177,24 +119,6 @@ def retrieve_relevant_facts(query: str, top_k: int = TOP_K) -> list[dict]:
     Returns:
         List of dicts with 'content' and 'category' keys,
         ordered by relevance (most relevant first)
-
-    AI Engineering Concept — Semantic search process:
-    1. Embed the query into a vector
-    2. Ask ChromaDB to find the N vectors closest to the query vector
-    3. Return the corresponding facts
-
-    The "closeness" is measured by cosine similarity:
-    - Score of 1.0 = identical meaning
-    - Score of 0.0 = completely unrelated
-    We filter out facts below a minimum similarity threshold
-    to avoid injecting irrelevant context.
-
-    AI Engineering Concept — Query construction:
-    We embed the user's message as-is. In more advanced systems
-    you might expand the query — adding context from recent
-    conversation turns to improve retrieval quality. This is
-    called HyDE (Hypothetical Document Embeddings) or query
-    expansion. We keep it simple for v3.
     """
     if _collection is None:
         return []
@@ -255,13 +179,6 @@ def get_relevant_profile_summary(query: str) -> str:
     Returns:
         Formatted string of relevant facts, or a note if
         the profile is empty.
-
-    AI Engineering Concept — Context window efficiency:
-    In v1 we might inject 500 tokens of profile context per message.
-    With RAG we inject ~50-100 tokens of highly relevant context.
-    Over 1000 messages, this saves ~450,000 tokens — significant
-    cost savings at scale, and better response quality too because
-    the LLM isn't distracted by irrelevant context.
     """
     facts = retrieve_relevant_facts(query)
 
@@ -291,12 +208,6 @@ def sync_existing_facts() -> None:
 
     Called at startup to handle the case where facts were saved
     before the vector index existed (e.g. upgrading from v1 to v3).
-
-    AI Engineering Concept — Index synchronisation:
-    In production systems, keeping multiple data stores in sync
-    is a real engineering challenge. Our approach is simple:
-    on startup, check what's in SQLite and index anything missing
-    from ChromaDB. For a single-user local app this is sufficient.
     """
     from backend.profile_store import get_connection
 
@@ -344,14 +255,6 @@ def find_conflicting_fact(content: str, category: str, threshold: float = 0.75) 
 
     Returns:
         The ChromaDB document ID of the conflicting fact, or None
-
-    AI Engineering Concept — Semantic deduplication:
-    Simple string matching catches exact duplicates ("Has Python experience"
-    == "Has Python experience"). But it misses paraphrases like
-    "Knows Python well" vs "Has experience with Python" — these mean
-    the same thing but are textually different.
-    Embedding similarity catches both cases because similar meanings
-    produce similar vectors, regardless of exact wording.
     """
     if _collection is None or _collection.count() == 0:
         return None

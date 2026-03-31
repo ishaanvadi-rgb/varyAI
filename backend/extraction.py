@@ -1,43 +1,17 @@
 """
-extraction.py — The AI learning engine of varyAI
+extraction.py — Fact extraction module for varyAI
 
 This module is responsible for extracting facts about the user
 from conversations in real-time. After every message exchange,
 this runs silently in the background and updates the local profile.
-
-AI Engineering Concept — Why a separate LLM call for extraction?
-We could try to make the main LLM extract facts AND respond to the user
-in one call, but that creates messy, unreliable outputs. Instead, we use
-a dedicated extraction call with a tightly controlled prompt that returns
-clean structured JSON. This is called "separation of concerns" — one LLM
-call does one job well.
-
-AI Engineering Concept — Structured outputs:
-We instruct the LLM to respond ONLY in JSON format. This is a core
-pattern in AI engineering — when you need reliable, parseable output
-from an LLM, you constrain its response format strictly in the prompt.
-In production systems this is handled by tools like Pydantic + instructor,
-but for v1 we do it manually to understand the fundamentals.
 """
 
 import json
 from backend.profile_store import save_facts
 
 
-# This is the prompt that drives the extraction engine.
-# It's the most important piece of prompt engineering in the entire project.
-#
-# Notice what makes it effective:
-# 1. Very specific role — "expert at identifying personal information"
-# 2. Clear categories with definitions
-# 3. Explicit JSON schema with an example
-# 4. Clear rules about what NOT to extract
-# 5. Hard instruction: return empty list if nothing found
-#
-# AI Engineering Concept — Prompt engineering for structured output:
-# The more specific and constrained your prompt, the more reliable the output.
-# Vague prompts = unpredictable outputs. This is especially true when you
-# need the LLM to return structured data like JSON.
+# Extraction prompt — instructs the LLM to return structured JSON
+# containing only explicitly stated facts about the user.
 
 EXTRACTION_PROMPT = """
 You are a precise fact extractor. Your job is to extract ONLY explicitly stated facts about the user from conversations.

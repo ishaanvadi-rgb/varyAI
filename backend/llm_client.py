@@ -5,11 +5,6 @@ This module supports multiple AI providers through a unified interface.
 Each provider uses the OpenAI-compatible API format, meaning the same
 code works for all of them — only the base_url and api_key change.
 
-AI Engineering Concept — Provider abstraction:
-By isolating all provider-specific details here, the rest of varyAI
-(extraction, retrieval, prompt building) never needs to know which
-provider is being used. This is the adapter pattern at scale.
-
 Supported providers:
 - Groq          → Fast inference, Llama models
 - Google        → Gemini 2.5 Flash/Pro, frontier quality free
@@ -106,12 +101,6 @@ def get_provider_client(provider_key: str) -> OpenAI | None:
     Returns None if the provider's API key is not configured —
     this is how we determine which models to show as available
     in the frontend dropdown.
-
-    AI Engineering Concept — OpenAI compatibility:
-    Almost every major LLM provider now implements the OpenAI
-    API format. This means we can use the same OpenAI Python SDK
-    for all of them — just changing base_url and api_key.
-    This is why provider abstraction is so powerful here.
 
     Args:
         provider_key: Key from PROVIDERS dict

@@ -8,25 +8,10 @@ The pipeline for every single message:
 1. Receive user message from frontend
 2. Add it to conversation history
 3. Build enriched messages with profile context
-4. Stream response from Gemini back to frontend
+4. Stream response from the LLM back to frontend
 5. Save assistant response to history
 6. Trigger extraction in background
 7. Refresh system prompt with updated profile
-
-AI Engineering Concept — Why FastAPI?
-FastAPI is built on top of Starlette and uses Python's async/await
-system. This matters for LLM applications because API calls are
-I/O bound — while waiting for Gemini to respond, the server can
-handle other requests instead of blocking. FastAPI also has native
-support for streaming responses, which is essential for the
-typewriter effect in the UI.
-
-AI Engineering Concept — Why a local server?
-Instead of calling the Gemini API directly from the browser,
-we route through a local Python server. This is important because:
-1. API keys must never be exposed in frontend code (browser)
-2. We need to run Python code (extraction, SQLite) on the backend
-3. We can add logic, validation, and error handling in one place
 """
 
 import asyncio
@@ -83,12 +68,6 @@ async def lifespan(app: FastAPI):
     """
     Runs setup code before the server starts accepting requests,
     and cleanup code when it shuts down.
-
-    AI Engineering Concept — Lifespan events:
-    We initialize expensive resources (database, model) once at startup
-    rather than on every request. Creating a database connection or
-    initializing an LLM model on every request would be slow and wasteful.
-    This is standard practice in production API servers.
     """
     global model
 
@@ -331,11 +310,6 @@ async def chat(request: ChatRequest):
 
     Returns a StreamingResponse — tokens arrive at the frontend
     as they're generated, enabling the typewriter effect.
-
-    AI Engineering Concept — async generators for streaming:
-    FastAPI's StreamingResponse accepts an async generator.
-    We wrap our synchronous Gemini stream in an async generator
-    so FastAPI can stream it properly over HTTP as Server-Sent Events.
     """
     global model, conversation_history, current_conversation_id
 
@@ -357,12 +331,6 @@ async def chat(request: ChatRequest):
         """
         Async generator that streams tokens to the frontend
         and collects the full response for post-processing.
-
-        AI Engineering Concept — Why collect while streaming?
-        We need the complete response text to run extraction on it.
-        But we can't wait for the full response before streaming —
-        that would defeat the purpose. So we stream AND collect
-        simultaneously, then run extraction after streaming completes.
         """
         global model
 

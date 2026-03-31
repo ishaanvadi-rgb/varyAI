@@ -5,34 +5,12 @@ This module constructs the system prompt that gets sent to the LLM
 before every conversation. It takes the user's profile from
 profile_store.py and weaves it into a prompt that makes the LLM
 feel like it already knows the user.
-
-AI Engineering Concept — What is a system prompt?
-Every LLM API call has three possible roles:
-- system:    Instructions to the LLM about how to behave. The user never
-             sees this. It sets the context, personality, and constraints.
-- user:      The actual message from the user.
-- assistant: The LLM's response.
-
-The system prompt is our most powerful tool. By injecting the user's
-profile here, the LLM reads it as foundational context before it even
-sees the user's first message. This is why it feels like the LLM
-"already knows" the user — because from the LLM's perspective, it does.
-
-AI Engineering Concept — Prompt structure matters:
-The order and structure of information in a prompt significantly affects
-LLM behavior. We put the most important context (who the user is) first,
-followed by behavioral instructions, followed by the profile data.
-This mirrors how you'd brief a human assistant — identity first,
-then instructions, then specifics.
 """
 
 from backend.profile_store import get_profile_summary
 
 
 # The base personality and behavior of varyAI
-# This is what makes it feel like a coherent product rather than
-# a raw API call. Every LLM product you've used has something like this
-# running silently before your first message.
 BASE_IDENTITY = """You are varyAI, a personal AI assistant with a unique ability — \
 you have access to a memory profile about the user you're talking to. \
 This profile has been built from your past conversations with them. \
@@ -118,14 +96,6 @@ def build_conversation_messages(history: list[dict], new_message: str) -> list[d
 
     Returns:
         Complete messages array ready to send to the LLM API
-
-    AI Engineering Concept — Why maintain full history?
-    LLMs are stateless — they have no memory between API calls.
-    The only way to maintain conversation context is to send the
-    ENTIRE conversation history with every single API call.
-    This is why long conversations become expensive — every message
-    sends all previous messages again. This is also why context
-    windows (maximum tokens per call) matter so much in production.
     """
 
     # Start with existing history
