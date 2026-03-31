@@ -94,15 +94,21 @@ def format_conversation(messages: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def extract_and_save(messages: list[dict], client) -> None:
+def extract_and_save(messages: list[dict], clients) -> None:
     """
-    The main extraction function. Takes the full conversation history,
-    asks Llama via Groq to extract facts, and saves them to the profile.
+    Extract facts from conversation using Groq as the extraction engine.
+    Falls back to first available client if Groq isn't configured.
 
     Args:
         messages: Full conversation history in standard chat format
-        client:   The initialized Groq client instance from llm_client.py
+        clients:  Dict of provider_key -> client, or a single client instance
     """
+    # Use Groq for extraction — fast and reliable for structured output
+    # Fall back to first available provider if Groq not configured
+    if isinstance(clients, dict):
+        client = clients.get("groq") or next(iter(clients.values()))
+    else:
+        client = clients
 
     conversation_text = format_conversation(messages)
     prompt = EXTRACTION_PROMPT.replace("{conversation}", conversation_text)

@@ -60,8 +60,8 @@ from backend.retrieval import initialize_retrieval, sync_existing_facts
 # Global state
 # ─────────────────────────────────────────────
 
-# The Gemini model instance — initialized once, reused for all requests
-# We store it here so extraction.py can reuse it too (dependency injection)
+# Dict of provider_key -> OpenAI client
+# Initialized once at startup, reused for all requests
 model = None
 
 # In-memory conversation history for the current session
@@ -315,11 +315,11 @@ async def remove_conversation(conversation_id: int):
 @app.get("/models")
 async def get_models():
     """
-    Returns the list of available LLMs for the frontend dropdown.
-    Called once when the frontend loads.
+    Returns available models based on which API keys are configured.
+    Models whose provider has no key are excluded automatically.
     """
     from backend.llm_client import get_available_models
-    return {"models": get_available_models()}
+    return {"models": get_available_models(model)}
 
 
 @app.post("/chat")

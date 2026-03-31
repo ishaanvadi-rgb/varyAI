@@ -1015,14 +1015,34 @@
       const select = document.getElementById('model-select');
       select.innerHTML = '';
 
+      // Group models by provider
+      const byProvider = {};
       availableModels.forEach(model => {
-        const option = document.createElement('option');
-        option.value = model.key;
-        option.textContent = model.name;
-        option.title = model.description;
-        if (model.key === currentModel) option.selected = true;
-        select.appendChild(option);
+        if (!byProvider[model.provider]) byProvider[model.provider] = [];
+        byProvider[model.provider].push(model);
       });
+
+      // Add optgroups for each provider
+      Object.entries(byProvider).forEach(([provider, models]) => {
+        const group = document.createElement('optgroup');
+        group.label = provider;
+        models.forEach(model => {
+          const option = document.createElement('option');
+          option.value = model.key;
+          option.textContent = model.name;
+          option.title = model.description;
+          if (model.key === currentModel) option.selected = true;
+          group.appendChild(option);
+        });
+        select.appendChild(group);
+      });
+
+      // If current model not available, select first available
+      if (!availableModels.find(m => m.key === currentModel)) {
+        currentModel = availableModels[0]?.key || currentModel;
+        select.value = currentModel;
+      }
+
     } catch (err) {
       console.error('Could not load models:', err);
     }
